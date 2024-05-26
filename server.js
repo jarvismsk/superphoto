@@ -69,7 +69,8 @@ const cleanupExpiredFiles = () => {
 // Schedule the cleanup to run periodically
 setInterval(cleanupExpiredFiles, EXPIRY_TIME);
 
-app.post('/process-image', upload.single('image'), (req, res) => {
+// Endpoint to process image
+app.post('/upload', upload.single('image'), (req, res) => {
   const imagePath = req.file.path;
   const outputFileName = path.basename(req.file.originalname, path.extname(req.file.originalname)) + '_processed.png';
   const outputPath = path.join(UPLOAD_DIR, outputFileName);
