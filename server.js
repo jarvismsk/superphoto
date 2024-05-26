@@ -11,7 +11,6 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 const UPLOAD_DIR = './uploads';
-const EXPIRY_TIME = 3600 * 1000; // 1 hour in milliseconds
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -36,39 +35,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Middleware to clean up expired files
-const cleanupExpiredFiles = () => {
-  fs.readdir(UPLOAD_DIR, (err, files) => {
-    if (err) {
-      console.error('Error reading upload directory:', err);
-      return;
-    }
-    files.forEach(file => {
-      const filePath = path.join(UPLOAD_DIR, file);
-      fs.stat(filePath, (err, stats) => {
-        if (err) {
-          console.error('Error getting file stats:', err);
-          return;
-        }
-        const now = Date.now();
-        const fileAge = now - stats.mtimeMs;
-        if (fileAge > EXPIRY_TIME) {
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error('Error deleting file:', err);
-            } else {
-              console.log(`Deleted expired file: ${filePath}`);
-            }
-          });
-        }
-      });
-    });
-  });
-};
-
-// Schedule the cleanup to run periodically
-setInterval(cleanupExpiredFiles, EXPIRY_TIME);
-
 // Endpoint to process image
 app.post('/upload', upload.single('image'), (req, res) => {
   const imagePath = req.file.path;
@@ -86,15 +52,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
   });
 
   pythonProcess.on('close', (code) => {
-    // Delete the input file after processing
-    fs.unlink(imagePath, (err) => {
-      if (err) {
-        console.error('Error deleting input file:', err);
-      } else {
-        console.log(`Deleted input file: ${imagePath}`);
-      }
-    });
-
     if (code === 0) {
       if (fs.existsSync(outputPath)) {
         res.send({ success: true, output_path: outputPath });
